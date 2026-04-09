@@ -176,7 +176,53 @@
 const { useState, useEffect, useRef, useCallback } = React;
 
 // ─── API ────────────────────────────────────────────────────────────────
-const API = "YOUR_SUPABASE_URL/functions/v1/crosstalk-api";
+// ─── API URL (from localStorage or setup) ───────────────────────────────
+function getApiUrl() {
+  try { return localStorage.getItem("crosstalk_api_url") || ""; } catch { return ""; }
+}
+function setApiUrl(url) {
+  try { localStorage.setItem("crosstalk_api_url", url); } catch {}
+}
+let API = getApiUrl();
+
+// ─── Setup Screen ───────────────────────────────────────────────────────
+function SetupScreen({ onDone }) {
+  const [url, setUrl] = useState("");
+  const [testing, setTesting] = useState(false);
+  const [err, setErr] = useState("");
+  const doTest = async () => {
+    setTesting(true); setErr("");
+    const full = url.trim().replace(/\/$/, "") + "/functions/v1/crosstalk-api";
+    try {
+      const res = await fetch(full + "/settings");
+      if (!res.ok) throw new Error("" + res.status);
+      setApiUrl(full); API = full; onDone();
+    } catch (e) { setErr("連接失敗 Connection failed — 請確認 URL 正確且 Edge Function 已部署"); }
+    setTesting(false);
+  };
+  return (
+    <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DotGothic16', monospace", padding: 20 }}>
+      <div style={{ background: "var(--card)", border: "2px solid var(--border)", padding: 28, boxShadow: "6px 6px 0 var(--shadow)", maxWidth: 420, width: "100%", textAlign: "center" }}>
+        <div style={{ fontSize: 28, marginBottom: 8 }}>🎵</div>
+        <div style={{ fontSize: 22, fontWeight: 800, color: "var(--accent)", letterSpacing: 4, marginBottom: 4 }}>CROSSTALK</div>
+        <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 24 }}>首次設定 First-time Setup</div>
+        <div style={{ fontSize: 11, color: "var(--text)", marginBottom: 12, lineHeight: 1.6, textAlign: "left" }}>
+          輸入你的 Supabase Project URL：<br/>
+          <span style={{ color: "var(--muted)", fontSize: 10 }}>例如 https://abcdefg.supabase.co</span>
+        </div>
+        <input value={url} onChange={e => setUrl(e.target.value)} placeholder="https://xxxxx.supabase.co" style={{ width: "100%", padding: 10, border: "2px solid var(--border)", background: "var(--cream)", fontFamily: "inherit", fontSize: 12, color: "var(--text)", outline: "none", boxSizing: "border-box", marginBottom: 8 }} />
+        {err && <div style={{ fontSize: 10, color: "var(--accent)", marginBottom: 8 }}>{err}</div>}
+        <button onClick={doTest} disabled={!url.trim() || testing} style={{ width: "100%", padding: 10, border: "2px solid var(--border)", background: "var(--accent)", color: "var(--cream)", cursor: "pointer", fontSize: 12, fontFamily: "inherit", boxShadow: "3px 3px 0 #7a7068", opacity: (!url.trim() || testing) ? .5 : 1 }}>
+          {testing ? "測試中..." : "連接 Connect"}
+        </button>
+        <div style={{ fontSize: 9, color: "var(--muted)", marginTop: 16, lineHeight: 1.6 }}>
+          需要先完成 Supabase 部署<br/>
+          詳見 <a href="https://github.com/onlonlonl/crosstalk" target="_blank" style={{ color: "var(--weather)" }}>GitHub README</a>
+        </div>
+      </div>
+    </div>
+  );
+}
 async function api(path, method = "GET", body = null) {
   const opts = { method, headers: { "Content-Type": "application/json" } };
   if (body) opts.body = JSON.stringify(body);
@@ -405,6 +451,7 @@ function SettingsModal({ settings: s, setSettings: ss, onSave, onClose }) {
           ))}
         </div>
       </div>
+      <button onClick={() => { localStorage.removeItem("crosstalk_api_url"); window.location.reload(); }} style={{ width: "100%", padding: 8, border: "1px solid var(--light)", background: "transparent", color: "var(--muted)", cursor: "pointer", fontSize: 10, fontFamily: "inherit", marginBottom: 8 }}>🔄 更換 Supabase URL</button>
       <button className="submit-btn" style={{ width: "100%" }} onClick={() => { onSave(); onClose(); }}>完成 Done</button>
     </div></div>
   );
@@ -412,6 +459,8 @@ function SettingsModal({ settings: s, setSettings: ss, onSave, onClose }) {
 
 // ─── Main App ───────────────────────────────────────────────────────────
 function App() {
+  const [ready, setReady] = useState(!!getApiUrl());
+  if (!ready) return (<SetupScreen onDone={() => setReady(true)} />);
   const [page, setPage] = useState("home");
   const [exp, setExp] = useState(null);
   const [at, setAt] = useState([]);
