@@ -138,4 +138,4 @@ MIT
 
 ---
 
-*Built with 🍊 by Iris & Claude*
+*Built with 🍊. By Iris & Claude*
