@@ -192,14 +192,14 @@ localStorage.setItem(“crosstalk_api_url”, full);
 return full;
 }
 return localStorage.getItem(“crosstalk_api_url”) || “”;
-} catch {
+} catch (e) {
 return “”;
 }
 }
 function setApiUrl(url) {
 try {
 localStorage.setItem(“crosstalk_api_url”, url);
-} catch {}
+} catch (e) {}
 }
 let API = getApiUrl();
 
@@ -693,7 +693,7 @@ try {
 const q = `${song.artist} ${song.title}`;
 const r = await api(`/search?q=${encodeURIComponent(q)}`);
 setSearchRes(r || []);
-} catch {
+} catch (e) {
 setSearchRes([]);
 }
 setSearching(false);
@@ -1263,7 +1263,7 @@ try {
 const q = `${exArtist.trim()} ${exSong.trim()}`;
 const results = await api(`/search?q=${encodeURIComponent(q)}`);
 setSearchResults(results || []);
-} catch {
+} catch (e) {
 setSearchResults([]);
 }
 setSearching(false);
